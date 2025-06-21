@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ClusterGenie</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="cg-app">
+        <aside class="cg-sidebar">
+            <div class="cg-logo-row">
+                <div class="cg-logo"> <span class="cg-logo-circle">C</span> </div>
+                <span class="cg-brand">ClusterGenie</span>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="cg-upload-form">
+                <input type="file" name="file" id="cg-upload" class="cg-upload-input" onchange="this.form.submit()">
+                <label for="cg-upload" class="cg-upload-btn">Upload Data</label>
+            </form>
+        </aside>
+        <main class="cg-main">
+            <section class="cg-clustering-card">
+                <div class="cg-clustering-controls">
+                    <h2>Clustering</h2>
+                    <form method="post" enctype="multipart/form-data" id="cg-main-form">
+                        <div class="cg-form-row">
+                            <label for="k">Number of Clusters</label>
+                            <input type="number" name="k" id="k" min="2" max="10" value="{{ k|default(3) }}">
+                        </div>
+                        <div class="cg-form-row">
+                            <label for="algorithm">Algorithm</label>
+                            <select name="algorithm" id="algorithm" disabled>
+                                <option value="kmeans" selected>K-Means</option>
+                            </select>
+                        </div>
+                        <div class="cg-form-row">
+                            <label for="palette">Color Palette</label>
+                            <select name="palette" id="palette" disabled>
+                                <option value="Category10" selected>Category10</option>
+                            </select>
+                        </div>
+                        <div class="cg-form-row">
+                            <label for="features">Features</label>
+                            <select multiple name="features" id="features">
+                                {% if columns %}
+                                    {% for col in columns %}
+                                        <option value="{{ col }}" {% if col in selected_features %}selected{% endif %}>{{ col }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option disabled>No columns yet</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="cg-form-row cg-checkbox-row">
+                            <input type="checkbox" name="standardize" id="standardize" {% if standardize %}checked{% endif %}>
+                            <label for="standardize">Standardize features</label>
+                        </div>
+                        <button type="submit" class="cg-run-btn">Run Clustering</button>
+                    </form>
+                </div>
+                <div class="cg-cluster-visualization">
+                    <div class="cg-visualization-title">Cluster Visualization</div>
+                    {% if plot_url %}
+                        <img src="{{ plot_url }}" class="cg-visualization-img" alt="Cluster plot">
+                    {% else %}
+                        <div class="cg-visualization-placeholder">No plot available.</div>
+                    {% endif %}
+                </div>
+            </section>
+            <section class="cg-results-row">
+                <div class="cg-score-card">
+                    <div class="cg-score-label">Silhouette Score</div>
+                    <div class="cg-score-value">{{ silhouette_score|default('--') }}</div>
+                </div>
+                <div class="cg-summary-card">
+                    <div class="cg-summary-title">Cluster Summary</div>
+                    {% if cluster_summary %}
+                        <table class="cg-summary-table">
+                            <thead>
+                                <tr><th>Cluster</th><th>Size</th><th>Silhouette Coefficient</th></tr>
+                            </thead>
+                            <tbody>
+                            {% for row in cluster_summary %}
+                                <tr>
+                                    <td>{{ row['cluster'] }}</td>
+                                    <td>{{ row['size'] }}</td>
+                                    <td>{{ row['silhouette'] }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="cg-summary-placeholder">No summary available.</div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
+        </main>
+    </div>
+    <script>
+    function toggleSidebar() {
+        var sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+    }
+
+    // Smooth scroll and active step highlight
+    document.querySelectorAll('.nav-step').forEach(function(step) {
+        step.addEventListener('click', function(e) {
+            var targetId = this.getAttribute('href');
+            if (targetId && targetId.startsWith('#')) {
+                e.preventDefault();
+                var el = document.querySelector(targetId);
+                if (el) {
+                    window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - 30, behavior: 'smooth'});
+                }
+                document.querySelectorAll('.nav-step').forEach(s => s.classList.remove('active'));
+                this.classList.add('active');
+            }
+        });
+    });
+    // Update active step on scroll
+    window.addEventListener('scroll', function() {
+        var sections = ['upload-section','configure-section','run-section','results-section'];
+        var scrollPos = window.scrollY + 100;
+        for (var i = sections.length - 1; i >= 0; i--) {
+            var sec = document.getElementById(sections[i]);
+            if (sec && sec.offsetTop <= scrollPos) {
+                document.querySelectorAll('.nav-step').forEach(s => s.classList.remove('active'));
+                var step = document.getElementById('step-' + sections[i].split('-')[0]);
+                if (step) step.classList.add('active');
+                break;
+            }
+        }
+    });
+    </script>
+</body>
+</html>
